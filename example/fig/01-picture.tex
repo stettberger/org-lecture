@@ -1,0 +1,19 @@
+\IfFileExists{luatex85.sty}{\RequirePackage{luatex85}}{}
+\documentclass{beamer}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[active,tightpage]{preview}
+\usepackage{lmodern}
+\usepackage{tikz}
+
+\PreviewEnvironment{tikzpicture}
+
+\begin{document}
+\begin{frame}
+  \begin{tikzpicture}
+    \only<1>{\node[draw] {A};}
+    \only<2>{\node[draw] {B};}
+  \end{tikzpicture}
+\end{frame}
+\end{document}

@@ -1,0 +1,98 @@
+#+TITLE: Beispielvorlesung
+#+SUBTITLE: Das erste Mal
+#+DATE: [2020-04-21]
+#+VIDEO_URL: https://flowcasts.uni-hannover.de/nodes/RMaaL
+#+SETUPFILE: setup.org
+#+INCLUDE: export-prologue.org
+#+PROPERTY: header-args:latex :tangle yes :noweb yes :tangle-macros yes :tangle-prologue topic :tangle-epilogue endtopic :exports none
+
+#+NAME: topic
+#+BEGIN_SRC latex :tangle no
+\OrgLectureSectionStart{{{{property(ITEM)}}}}{{{{n(block)}}}}
+#+END_SRC
+
+#+NAME: endtopic
+#+BEGIN_SRC latex :tangle no
+\OrgLectureSectionStop{{{{property(ITEM)}}}}{{{{n(block,-)}}}}
+#+END_SRC
+
+
+#+BEGIN_SRC latex :tangle-prologue nil
+\subtitle{{{{subtitle()}}}}
+
+\begin{frame}
+\maketitle
+\end{frame}
+
+#+END_SRC
+
+#+begin_export html
+<div class="alert alert-danger">
+<strong>Tastenkombinationen im Skript:</strong><br/>
+<ul>
+<li>Mausklick: Im Folienstapel vorwärts gehen.</li>
+<li>Shift+Mausklick: Im Folienstapel rückwärts gehen.</li>
+</ul>
+</div>
+#+end_export
+
+* Private Kommentare                                               :noexport:
+
+- <mxk>dass auftauchen der "C-Virtuellen-Maschine" (aka PDP-11) ist etwas überraschend in dem Text, ich wusste, dass es kommt, aber etwas mehr hinführung von "hardware-vms" hin zu der abstrakten "sprach-vm" wäre glaube ich ganz gut um weniger leute zu verlieren
+
+- <mxk> und zu "Genauso ist es möglich, dass ein Übersetzer von RISC-V-Assembler nach C (umgekehrte Richtung) übersetzt oder von C nach JavaScript (quer zum Ebenenmodell)." währe wohl ein satz, dass entlang der abstaktionsschichten information verloren geht und deshalb die umkehr nicht verlustfrei sein kann, angemessen
+
+* Folien im Skript
+:PROPERTIES:
+:CUSTOM_ID: 01-einleitung
+:END:
+
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enimad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+
+#+BEGIN_SRC latex
+  \begin{frame}{Was soll diese Veranstaltung leisten?}
+    \begin{itemize}
+    \item Foo
+    \item<2-|handout:1-> Bar
+    \item<3-|handout:2-> Baz
+  \end{itemize}
+  \end{frame}
+#+END_SRC
+
+* Source Code im Skript
+:PROPERTIES:
+:CUSTOM_ID: 01-Extra
+:END:
+
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enimad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+#+BEGIN_SRC latex
+  \begin{frame}{Another Frame}
+    \only<1|handout:1>{\includegraphics[width=2cm, page=1]{fig/01-picture}}%
+    \only<2|handout:2>{\includegraphics[width=2cm, page=2]{fig/01-picture}}%
+  \end{frame}
+#+END_SRC
+
+#+begin_src python
+  sequence = [1, 1, 2, 3, 5, 8, 13]
+  idx = 0
+  while idx < len(sequence):
+      print(sequence[idx])
+      idx += 1
+
+  print("---")
+  for element in sequence:
+      print(element)
+#+end_src
+
+#+CAPTION: Bild im Skript
+#+ATTR_HTML: :width 50%
+[[./fig/01-picture-1.png]]
+

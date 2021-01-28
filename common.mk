@@ -2,14 +2,17 @@
 # Org-lectures Options
 LATEXMK ?= latexmk -pdf -lualatex
 OL_DIR  ?= org-lecture
+export OL_DIR
 VIEW    ?= xdg-open
 
 ## Derived Variables
 OL_TOOLS := ${OL_DIR}/tools
 
+SLIDE_TEX_DEPENDS += preamble.tex ${OL_DIR}/preamble.tex
+
 ################################################################
 # Build Directory Setup
-build: texmf/ls-R
+build: 
 	@mkdir -p build/tangle
 	@mkdir -p build/html
 	@ln -fs ../export-prologue.org build
@@ -19,10 +22,7 @@ build: texmf/ls-R
 	@ln -fs ../../fig     build/html
 	@ln -fs ../../lst     build/html
 
-texmf/ls-R:
-	mktexlsr texmf/
-
-ARTIFACTS += build texmf/ls-R
+ARTIFACTS += build
 
 ################################################################
 # Emacs Server
@@ -30,8 +30,7 @@ EMACS_SESSION ?= org-lecture
 EC=make -s emacs/ensure; emacsclient -s ${EMACS_SESSION}
 
 emacs/start:
-	@emacs -q -l ${OL_DIR}/site-lisp/init.el --daemon=${EMACS_SESSION}
-	@echo "Started Emacs"
+	emacs -q -l ${OL_DIR}/site-lisp/init.el --daemon=${EMACS_SESSION}
 
 emacs/debug:
 	@emacs -q -l ${OL_DIR}/site-lisp/init.el
@@ -74,7 +73,7 @@ build/tangle/$(2).tex: $(2).org
 build/$(2).slides.tex: build/tangle/$(2).tex
 	$${OL_TOOLS}/gen-latex-root beamer $$< > $$@
 
-build/$(2).slides.pdf: build/$(2).slides.tex
+build/$(2).slides.pdf: build/$(2).slides.tex ${SLIDE_TEX_DEPENDS}
 	${LATEXMK} $$< -outdir=build
 	@mkdir -p build/html; cp $$@ build/html
 
@@ -92,7 +91,7 @@ $(1).all: build/$(2).slides.pdf
 build/$(2).handout.tex: build/tangle/$(2).tex
 	@$${OL_TOOLS}/gen-latex-root handout $$< > $$@
 
-build/$(2).handout.pdf: build/$(2).handout.tex
+build/$(2).handout.pdf: build/$(2).handout.tex ${SLIDE_TEX_DEPENDS}
 	${LATEXMK} $$< -outdir=build
 	@mkdir -p build/html; cp $$@ build/html
 
@@ -157,6 +156,10 @@ build/html/$(2).html: $(2).org
 	${EC} -e '(org-export-to-html-file "${PWD}/$(2).org" "${PWD}/build/html/$(2).html")'
 
 html: build/html/$(1).html
+$(1).html: build/html/$(1).html
+$(1).html.view: build/html/$(1).html
+$(1).view: build/html/$(1).html
+$(1): build/html/$(1).html
 $(1).all: build/html/$(1).html
 endef
 
@@ -171,7 +174,7 @@ define PROCESS_STAMP
 # $(3): page
 fig/$(1)-stamp.png: $(2)
 	convert -density 300 $(2)[$(3)]  -quality 100 -geometry 200x150 $$@
-index: fig/$(1)-stamp.png
+index.html: fig/$(1)-stamp.png
 endef
 
 # Example: $(eval $(call PROCESS_STAMP,09,fig/09-optimization-depends.pdf,0))
@@ -210,6 +213,7 @@ define PROCESS_PUBLISH
 $(1).publish: build build/html/index.html $(1).all
 	cd build/html; rsync -aLv  ./img ./css ./js ./lst ./fig ./$(2)* ${REMOTE}
 
+publish: $(1).publish
 endef
 
 $(eval $(call invoke,PROCESS_PUBLISH,$(ORG_SLIDES)))
@@ -226,16 +230,16 @@ $(eval $(call invoke,PROCESS_PUBLISH,$(ORG_HTML)))
 
 ################################################################
 # Figures
-fig/%.pdf: fig/%.tex texmf-local/lecturefig.cls
+fig/%.pdf: fig/%.tex ${FIGURE_TEX_DEPENDS}
 	@${MAKE} build
 	latexmk -pdf $< -outdir=build
 	@cp $(patsubst fig/%,build/%,$@) $@
 
-fig/%.pdf: fig/%.dot  Makefile
+fig/%.pdf: fig/%.dot
 	@${MAKE} build
 	dot -Tpdf $< > $@
 
-fig/%.pdf: fig/%.svg bin/svgfig
+fig/%.pdf: fig/%.svg ${OL_TOOLS}/svgfig
 	${OL_TOOLS}/svgfig $<
 
 

@@ -1,5 +1,3 @@
-
-
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -45,10 +43,10 @@
 (setq org-html-klipsify-src nil)
 (setq org-html-htmlize-font-prefix  "org-")
 (setq org-html-htmlize-output-type 'css)
-(setq org-html-postamble
-      (with-temp-buffer
-        (insert-file-contents
-         (format "%s/COPYING.footer.html" org-sra-src-dir))
-        (buffer-string)))
+(setq org-html-postamble "")
+;;      (with-temp-buffer
+;;        (insert-file-contents
+;;         (format "%s/COPYING.footer.html" org-sra-src-dir))
+;;        (buffer-string)))
 
-(message "  ... emacs is started.")
+(log "Emacs has started.")
