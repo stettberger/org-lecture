@@ -10,6 +10,8 @@ OL_TOOLS := ${OL_DIR}/tools
 
 SLIDE_TEX_DEPENDS += preamble.tex ${OL_DIR}/preamble.tex
 
+all:
+
 ################################################################
 # Build Directory Setup
 build:
@@ -19,8 +21,8 @@ build:
 	@rsync -a ${OL_DIR}/html/. build/html/.
 	@if [ -x html ]; then rsync -a html/. build/html/.; fi
 	@ln -fs ../export-prologue.org build
-	@if [ -x ../../fig ]; then ln -fs ../../fig     build/html; fi
-	@if [ -x ../../lst ]; then ln -fs ../../lst     build/html; fi
+	@if [ -x ./fig ]; then ln -fs ../../fig     build/html; fi
+	@if [ -x ./lst ]; then ln -fs ../../lst     build/html; fi
 
 
 ARTIFACTS += build
@@ -102,6 +104,8 @@ $(1).handout: build/$(2).handout.pdf
 HELP+="$(1).handout.view:  View handout: $(2).org\n"
 $(1).handout.view: build/$(2).handout.pdf
 $(1).all: build/$(2).handout.pdf
+all: $(1).all
+
 
 handouts: build/$(2).handout.pdf
 
@@ -162,6 +166,7 @@ $(1).html.view: build/html/$(1).html
 $(1).view: build/html/$(1).html
 $(1): build/html/$(1).html
 $(1).all: build/html/$(1).html
+all: $(1).all
 endef
 
 $(eval $(call invoke,PROCESS_HTML,$(ORG_HTML)))
