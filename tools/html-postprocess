@@ -1,0 +1,41 @@
+#!/usr/bin/python3
+
+import sys
+from lxml.html import parse
+from lxml import etree
+
+with open(sys.argv[1]) as fd:
+    doc = parse(fd)
+
+def wrap(element, type, unwrap=False,**kwargs):
+    parent = element.getparent()
+    wrap = etree.Element(type)
+    for k,v in kwargs.items():
+        wrap.attrib[k] = v
+    parent.replace(element, wrap)
+    if unwrap:
+        for child in element.getchildren():
+            wrap.append(child)
+    else:
+        wrap.append(element)
+    return wrap
+
+# Wrap Containers into Bootstrap
+postamble = doc.find("//div[@id='postamble']")
+content =  doc.find("//div[@id='content']")
+if content is not None:
+    container = wrap(content, 'div', unwrap=True, **{'class': 'col-md-9', 'id':'main-row'})
+    if postamble is not None:
+        container.append(postamble)
+        print("APPEND")
+    container = wrap(container, 'div', **{'class': 'row'})
+    container = wrap(container, 'div', **{'class': 'container'})
+
+# Table of Contents
+toc =  doc.find("//div[@id='table-of-contents']")
+toc.attrib['class'] = 'well'
+x = wrap(toc, 'div', **{'class': 'card bg-light mb-2 pb-1'})
+
+with open(sys.argv[1], 'wb') as fd:
+    fd.write(etree.tostring(doc))
+

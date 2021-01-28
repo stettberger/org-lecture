@@ -110,7 +110,7 @@ The two arguments are used in recursive calls."
 
 (defun org-macro-sra-see (custom_id title)
   (let* ((prefix (car (s-split "-" custom_id)))
-         (files (directory-files org-sra-src-dir nil (format "%s-.*\\.org" prefix)))
+         (files (directory-files org-lecture-src-dir nil (format "%s-.*\\.org" prefix)))
 	 (org-file (car files)))
     (format "[fn::Siehe [[file:%s::#%s][%s]].]" org-file custom_id title)))
 

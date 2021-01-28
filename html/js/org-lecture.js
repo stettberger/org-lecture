@@ -16,17 +16,6 @@ $( document ).ready(function() {
         inner.children().children().unwrap();
         $(".slide").removeClass('d-block').removeClass('slide').addClass('slide-print');
     } else {
-        // The content (and postamble) should be in a container.
-        var toc = $('#table-of-contents').detach();
-        toc.insertAfter(".title");
-
-        var content = $('#content, #postamble');
-        content.wrapAll("<div class='container'><div id='main-row' class='row'><div class='col-md-9'></div></div></div>");
-        content.children().unwrap();
-
-        $('#table-of-contents').wrapAll("<div id='toc-well' class='card bg-light mb-2 pb-1'></div>");
-        $('#table-of-contents').addClass("well");
-
         if (window.location.href.match(/.*handout.html/)) {
             $('<strong> - Druckversion</strong>').appendTo('.subtitle');
         } else {
@@ -47,8 +36,6 @@ $( document ).ready(function() {
                 $('<a class="headlineref"  href="#'+headline.id+'">&#128279;</a>').appendTo(headline);
             }
         });
-
-        $('#footnotes').appendTo('.col-md-9');
 
         $("div.carousel").each(function (idx, carousel) {
             $(carousel).find("div.carousel-inner").click(function(e) {

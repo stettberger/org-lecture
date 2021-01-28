@@ -22,8 +22,8 @@
 (add-to-list 'load-path load-dir)
 (log "lisp library: %s" load-dir)
 
-(setq org-sra-src-dir default-directory)
-(log "source files: %s" org-sra-src-dir)
+(setq org-lecture-src-dir default-directory)
+(log "source files: %s" org-lecture-src-dir)
 
 (require 'package)
 (setq package-archives
@@ -47,9 +47,10 @@
 (setq org-html-htmlize-font-prefix  "org-")
 (setq org-html-htmlize-output-type 'css)
 (setq org-html-postamble "")
-;;      (with-temp-buffer
-;;        (insert-file-contents
-;;         (format "%s/COPYING.footer.html" org-sra-src-dir))
-;;        (buffer-string)))
+
+(let ((custom (format "%s/custom.el" org-lecture-src-dir)))
+  (when (file-exists-p custom)
+    (log "Loading %s" custom)
+    (load-file custom)))
 
 (log "Emacs has started.")

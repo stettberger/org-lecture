@@ -36,7 +36,7 @@ emacs/start:
 	emacs -q -l ${OL_DIR}/site-lisp/init.el --daemon=${EMACS_SESSION}
 
 emacs/debug:
-	@emacs -q -l ${OL_DIR}/site-lisp/init.el
+	@emacs --debug-init -q -l ${OL_DIR}/site-lisp/init.el
 
 emacs/stop:
 	@emacsclient -s ${EMACS_SESSION}  -e '(kill-emacs 0)' >/dev/null 2>&1 || true
@@ -135,9 +135,10 @@ $(1).split: build/html/$(2).handout/.split-stamp
 build/$(2).org: $(2).org build/html/$(2).handout/.split-stamp ${OL_TOOLS}/insert-carousels
 	${OL_TOOLS}/insert-carousels $(2).org build/$(2).handout.topics > $$@
 
-build/html/$(2).html: build/$(2).org
+build/html/$(2).html: build/$(2).org ${OL_TOOLS}/html-postprocess
 	@mkdir -p build/html
 	${EC} -e '(org-export-to-html-file "${PWD}/build/$(2).org" "${PWD}/build/html/$(2).html")'
+	${OL_TOOLS}/html-postprocess build/html/$(2).html
 
 HELP+="$(1).html:       Build HTML file\n"
 $(1).html: build build/html/$(2).html
