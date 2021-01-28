@@ -1,29 +1,16 @@
 #+TITLE: Beispielvorlesung
 #+SUBTITLE: Das erste Mal
 #+DATE: [2020-04-21]
-#+VIDEO_URL: https://flowcasts.uni-hannover.de/nodes/RMaaL
-#+SETUPFILE: setup.org
+#+VIDEO_URL: https://www.youtube.com/watch?v=2UYuWWX3SMc
 #+INCLUDE: export-prologue.org
-#+PROPERTY: header-args:latex :tangle yes :noweb yes :tangle-macros yes :tangle-prologue topic :tangle-epilogue endtopic :exports none
+#+PROPERTY: header-args:latex :tangle yes :noweb yes :tangle-macros yes :exports none
 
-#+NAME: topic
-#+BEGIN_SRC latex :tangle no
-\OrgLectureSectionStart{{{{property(ITEM)}}}}{{{{n(block)}}}}
-#+END_SRC
-
-#+NAME: endtopic
-#+BEGIN_SRC latex :tangle no
-\OrgLectureSectionStop{{{{property(ITEM)}}}}{{{{n(block,-)}}}}
-#+END_SRC
-
-
-#+BEGIN_SRC latex :tangle-prologue nil
+#+BEGIN_SRC latex
+\title{{{{title()}}}}
 \subtitle{{{{subtitle()}}}}
-
 \begin{frame}
 \maketitle
 \end{frame}
-
 #+END_SRC
 
 #+begin_export html
@@ -49,7 +36,7 @@
 
 Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 Ut enimad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.{{{see(01-Extra, Foo)}}}
 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
 
@@ -95,4 +82,13 @@ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deseru
 #+CAPTION: Bild im Skript
 #+ATTR_HTML: :width 50%
 [[./fig/01-picture-1.png]]
+
+#+BEGIN_SRC latex
+  \begin{frame}{Third Frame}
+    Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+  Ut enimad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+  Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+  \end{frame}
+#+END_SRC
 

@@ -12,15 +12,16 @@ SLIDE_TEX_DEPENDS += preamble.tex ${OL_DIR}/preamble.tex
 
 ################################################################
 # Build Directory Setup
-build: 
+build:
+	@echo "[org-lecture] Setup build directory and copy HTML files."
 	@mkdir -p build/tangle
-	@mkdir -p build/html
+	@mkdir -p build/html/css build/html/img build/html/js
+	@rsync -a ${OL_DIR}/html/. build/html/.
+	@if [ -x html ]; then rsync -a html/. build/html/.; fi
 	@ln -fs ../export-prologue.org build
-	@ln -fs ../../${OL_DIR}/html/css build/html/
-	@ln -fs ../../${OL_DIR}/html/img build/html/
-	@ln -fs ../../${OL_DIR}/html/js build/html/
-	@ln -fs ../../fig     build/html
-	@ln -fs ../../lst     build/html
+	@if [ -x ../../fig ]; then ln -fs ../../fig     build/html; fi
+	@if [ -x ../../lst ]; then ln -fs ../../lst     build/html; fi
+
 
 ARTIFACTS += build
 

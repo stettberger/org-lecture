@@ -39,6 +39,9 @@
 (require 'ox-html)
 (require 'htmlize)
 
+(setq org-tangle-prologue "\\OrgLectureSectionStart{{{{property(ITEM)}}}}{{{{n(block)}}}}")
+(setq org-tangle-epilogue "\\OrgLectureSectionStop{{{{property(ITEM)}}}}{{{{n(block,-)}}}}")
+
 ;; Configure org-mode
 (setq org-html-klipsify-src nil)
 (setq org-html-htmlize-font-prefix  "org-")

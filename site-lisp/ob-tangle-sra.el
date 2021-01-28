@@ -205,8 +205,6 @@ non-nil, return the full association list to be used by
 	 (expand-cmd (intern (concat "org-babel-expand-body:" src-lang)))
 	 (assignments-cmd
 	  (intern (concat "org-babel-variable-assignments:" src-lang)))
-         (prologue (cdr (assq :tangle-prologue params)))
-         (epilogue (cdr (assq :tangle-epilogue params)))
 	 (body
 	  ;; Run the tangle-body-hook.
           (let* ((datum (org-element-context))
@@ -216,12 +214,11 @@ non-nil, return the full association list to be used by
                  (end-line (1+ (count-lines 1 end)))
                  (body (if (org-babel-noweb-p params :tangle)
                            (progn
-                             (if prologue
-                                 (setf (nth 1 info)
-                                       (format "<<%s>>\n%s" prologue (nth 1 info))))
-                             (if epilogue
-                                 (setf (nth 1 info)
-                                       (format "%s\n<<%s>>" (nth 1 info) epilogue)))
+                             (setf (nth 1 info)
+                                   (format "%s\n%s\n%s"
+                                           org-tangle-prologue
+                                           (nth 1 info)
+                                           org-tangle-epilogue))
                              (setq macros
                                    `(("range" . ,(format "%s-%s" beg-line end-line))
                                      ("subtitle" . ,(org-macro--find-keyword-value "SUBTITLE" t))
