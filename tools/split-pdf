@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     # Use SVG
     convert = ["pdf2svg", pdf, f"{output_dir}/slide-%04d.svg", "all"]
-    print(" ".join(convert))
+    print("[split-pdf]", " ".join(convert))
     subprocess.check_call(convert)
 
     with open(sys.argv[2], "rb") as fd:
@@ -25,19 +25,3 @@ if __name__ == '__main__':
             for page in range(pages[0], pages[1] + 1):
                 fn = f"{output_dir}/slide-{page:04d}.svg"
                 assert os.path.exists(fn), "PDF split failed"
-                print(fn)
-            continue
-
-            # if not os.path.exists(output_dir):
-            #     os.mkdir(output_dir)
-            # split = ["pdftk", pdf, "cat", pages, "output", f"{output_dir}/{topic}-{lines}.pdf", "dont_ask"]
-            # print(" ".join(split))
-            # subprocess.check_call(split)
-
-            # # Use SVG
-            # convert = ["pdf2svg",
-            #            f"{output_dir}/{topic}-{lines}.pdf",
-            #            f"{output_dir}/{topic}-{lines}-%04d.svg",
-            #            "all"]
-            # print(" ".join(convert))
-            # subprocess.check_call(convert)

@@ -1,0 +1,246 @@
+################################################################
+# Org-lectures Options
+LATEXMK ?= latexmk -pdf -lualatex
+OL_DIR  ?= org-lecture
+VIEW    ?= xdg-open
+
+## Derived Variables
+OL_TOOLS := ${OL_DIR}/tools
+
+################################################################
+# Build Directory Setup
+build: texmf/ls-R
+	@mkdir -p build/tangle
+	@mkdir -p build/html
+	@ln -fs ../export-prologue.org build
+	@ln -fs ../../${OL_DIR}/html/css build/html/
+	@ln -fs ../../${OL_DIR}/html/img build/html/
+	@ln -fs ../../${OL_DIR}/html/js build/html/
+	@ln -fs ../../fig     build/html
+	@ln -fs ../../lst     build/html
+
+texmf/ls-R:
+	mktexlsr texmf/
+
+ARTIFACTS += build texmf/ls-R
+
+################################################################
+# Emacs Server
+EMACS_SESSION ?= org-lecture
+EC=make -s emacs/ensure; emacsclient -s ${EMACS_SESSION}
+
+emacs/start:
+	@emacs -q -l ${OL_DIR}/site-lisp/init.el --daemon=${EMACS_SESSION}
+	@echo "Started Emacs"
+
+emacs/debug:
+	@emacs -q -l ${OL_DIR}/site-lisp/init.el
+
+emacs/stop:
+	@emacsclient -s ${EMACS_SESSION}  -e '(kill-emacs 0)' >/dev/null 2>&1 || true
+	@pgrep -l -f "^emacs.*--daemon=${EMACS_SESSION}" || true
+	@pkill -f "^emacs.*--daemon=${EMACS_SESSION}" || true
+
+emacs/restart: emacs/stop emacs/start
+
+emacs/ensure:
+	@emacsclient -s ${EMACS_SESSION} -e 't' >/dev/null 2>&1 || make -s emacs/restart
+
+################################################################
+# Make tooling
+
+define invoke
+# $(1): macro name (e.g., PROCESS_SLIDE)
+# $(2): list of org-mode files
+$(foreach file,$(2),\
+$(call $(1),$(shell echo $(file:.org=) | awk -F- '{print $$1;}'),$(file:.org=)))
+endef
+
+HELP=""
+help:
+	@echo -n ${HELP} | sort -n
+
+################################################################
+# Slide Processing (org -> tex -> pdf)
+define PROCESS_SLIDE # $(1) = 01, $(2) = 01-einleitung
+
+build/tangle/$(2).tex: $(2).org
+	@mkdir -p build/tangle
+	${EC} -e '(org-babel-tangle-file "${PWD}/$(2).org" nil "latex")'
+	@mv $(2).tex $$@
+	${OL_TOOLS}/delete-frames $$@
+
+# Slides
+build/$(2).slides.tex: build/tangle/$(2).tex
+	$${OL_TOOLS}/gen-latex-root beamer $$< > $$@
+
+build/$(2).slides.pdf: build/$(2).slides.tex
+	${LATEXMK} $$< -outdir=build
+	@mkdir -p build/html; cp $$@ build/html
+
+slides: build/$(2).slides.pdf
+
+HELP+="$(1):               Build slides: $(2).org\n"
+$(1): build/$(2).slides.pdf
+
+HELP+="$(1).view:          View slides: $(2).org\n"
+$(1).view: build/$(2).slides.pdf
+$(1).all: build/$(2).slides.pdf
+
+
+# Handouts.
+build/$(2).handout.tex: build/tangle/$(2).tex
+	@$${OL_TOOLS}/gen-latex-root handout $$< > $$@
+
+build/$(2).handout.pdf: build/$(2).handout.tex
+	${LATEXMK} $$< -outdir=build
+	@mkdir -p build/html; cp $$@ build/html
+
+HELP+="$(1).handout:       Build handout from $(2).org\n"
+$(1).handout: build/$(2).handout.pdf
+
+HELP+="$(1).handout.view:  View handout: $(2).org\n"
+$(1).handout.view: build/$(2).handout.pdf
+$(1).all: build/$(2).handout.pdf
+
+handouts: build/$(2).handout.pdf
+
+# Add figures as dependencies
+build/$(2).slides.pdf build/$(2).handout.pdf: $(shell find fig/ -name "$(1)-*.pdf")
+
+endef
+
+# Invoke macro on ORG_SLIDES list
+$(eval $(call invoke,PROCESS_SLIDE,$(ORG_SLIDES)))
+
+################################################################
+# Create HTML Files from SLIDES
+
+define PROCESS_SLIDE_HTML
+# $(1) = 01
+# $(2) = 01-einleitung
+build/html/$(2).handout/.split-stamp: build/$(2).handout.pdf $(OL_TOOLS)/split-pdf
+	@mkdir -p build/html/$(2).handout/
+	@rm -f build/html/$(2)/*.pdf build/html/$(2)/*.svg
+	${OL_TOOLS}/split-pdf $$< $$(patsubst %.pdf,%.topics,$$<)
+	@touch $$@
+
+HELP+="$(1).handout:       Split handout into svg pieces\n"
+$(1).split: build/html/$(2).handout/.split-stamp
+
+build/$(2).org: $(2).org build/html/$(2).handout/.split-stamp ${OL_TOOLS}/insert-carousels
+	${OL_TOOLS}/insert-carousels $(2).org build/$(2).handout.topics > $$@
+
+build/html/$(2).html: build/$(2).org
+	@mkdir -p build/html
+	${EC} -e '(org-export-to-html-file "${PWD}/build/$(2).org" "${PWD}/build/html/$(2).html")'
+
+HELP+="$(1).html:       Build HTML file\n"
+$(1).html: build build/html/$(2).html
+$(1).all: build build/html/$(2).html
+
+HELP+="$(1).html.view:       View HTML file\n"
+$(1).html.view: build/html/$(2).html
+
+endef
+
+$(eval $(call invoke,PROCESS_SLIDE_HTML,$(ORG_SLIDES)))
+
+
+################################################################
+# Direct Org->HTML Export
+define PROCESS_HTML
+# $(1): basename
+# $(2): basename
+build/html/$(2).html: $(2).org
+	@mkdir -p build/html
+	${EC} -e '(org-export-to-html-file "${PWD}/$(2).org" "${PWD}/build/html/$(2).html")'
+
+html: build/html/$(1).html
+$(1).all: build/html/$(1).html
+endef
+
+$(eval $(call invoke,PROCESS_HTML,$(ORG_HTML)))
+
+
+################################################################
+# Stamp file support for index Page
+define PROCESS_STAMP
+# $(1): chapter (e.g., 01)
+# $(2): base file
+# $(3): page
+fig/$(1)-stamp.png: $(2)
+	convert -density 300 $(2)[$(3)]  -quality 100 -geometry 200x150 $$@
+index: fig/$(1)-stamp.png
+endef
+
+# Example: $(eval $(call PROCESS_STAMP,09,fig/09-optimization-depends.pdf,0))
+
+################################################################
+# PDF pictures for thml script
+define PROCESS_PDF2PNG
+# $(1): PDF file
+# $(2): Page
+$(patsubst %.pdf, %-$(2).png, $(1)): $(1)
+	convert -density 300 $$<[$(2)] -quality 100 -geometry 800x600 $$@
+endef
+
+################################################################
+# Wordcount support
+define PROCESS_WORDCOUNT
+# $(1) = 01
+# $(2) = 01-einleitung
+$(1).wc:
+	@awk 'BEGIN {IGNORECASE=1; p=1}; /#\+begin_(example|src)/ {p=0}; {if(p) print};  /#\+end_(example|src)/ {p=1}' < $(2).org | wc -w
+WC+=$(1).wc
+
+endef
+
+$(eval $(call invoke,PROCESS_WORDCOUNT,$(ORG_SLIDES)))
+$(eval $(call invoke,PROCESS_WORDCOUNT,$(ORG_HTML)))
+
+wc:
+	@make -s ${WC} | tr "\n" " " | dc -f - -e '[+z1<r]srz1<rp'
+
+################################################################
+# Publish files to REMOTE
+define PROCESS_PUBLISH
+# $(1) = 01
+# $(2) = 01-einleitung
+$(1).publish: build build/html/index.html $(1).all
+	cd build/html; rsync -aLv  ./img ./css ./js ./lst ./fig ./$(2)* ${REMOTE}
+
+endef
+
+$(eval $(call invoke,PROCESS_PUBLISH,$(ORG_SLIDES)))
+$(eval $(call invoke,PROCESS_PUBLISH,$(ORG_HTML)))
+
+
+################################################################
+# Wildcard rules
+################################################################
+
+# View targets
+%.view:
+	${VIEW} $< &
+
+################################################################
+# Figures
+fig/%.pdf: fig/%.tex texmf-local/lecturefig.cls
+	@${MAKE} build
+	latexmk -pdf $< -outdir=build
+	@cp $(patsubst fig/%,build/%,$@) $@
+
+fig/%.pdf: fig/%.dot  Makefile
+	@${MAKE} build
+	dot -Tpdf $< > $@
+
+fig/%.pdf: fig/%.svg bin/svgfig
+	${OL_TOOLS}/svgfig $<
+
+
+clean: emacs/stop
+	rm -rf ${ARTIFACTS}
+
+.PRECIOUS: build/%.pdf build/tangle/%.tex build/%.pdf.split build/%.tex
+.PHONY:  build
