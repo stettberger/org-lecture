@@ -160,6 +160,8 @@ define PROCESS_HTML
 build/html/$(2).html: $(2).org
 	@mkdir -p build/html
 	${EC} -e '(org-export-to-html-file "${PWD}/$(2).org" "${PWD}/build/html/$(2).html")'
+	${OL_TOOLS}/html-postprocess build/html/$(2).html
+
 
 html: build/html/$(1).html
 $(1).html: build/html/$(1).html

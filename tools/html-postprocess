@@ -27,14 +27,14 @@ if content is not None:
     container = wrap(content, 'div', unwrap=True, **{'class': 'col-md-9', 'id':'main-row'})
     if postamble is not None:
         container.append(postamble)
-        print("APPEND")
     container = wrap(container, 'div', **{'class': 'row'})
     container = wrap(container, 'div', **{'class': 'container'})
 
 # Table of Contents
 toc =  doc.find("//div[@id='table-of-contents']")
-toc.attrib['class'] = 'well'
-x = wrap(toc, 'div', **{'class': 'card bg-light mb-2 pb-1'})
+if toc is not None:
+    toc.attrib['class'] = 'well'
+    x = wrap(toc, 'div', **{'class': 'card bg-light mb-2 pb-1', 'id': 'toc-well'})
 
 with open(sys.argv[1], 'wb') as fd:
     fd.write(etree.tostring(doc))
