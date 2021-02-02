@@ -2,6 +2,7 @@
 (require 'ob-latex)
 (require 'ox-html)
 (require 'ox-tufte)
+(require 'dash)
 
 (require 'org-macro-sra)
 
@@ -147,10 +148,13 @@ can be used to limit the collected code blocks by target file."
       (unless (org-in-commented-heading-p)
 	(let* ((info (org-babel-get-src-block-info 'light))
 	       (src-lang (nth 0 info))
-	       (src-tfile (cdr (assq :tangle (nth 2 info)))))
+	       (src-tfile (cdr (assq :tangle (nth 2 info))))
+	       (heading-tags (org-get-tags))
+	       (excluded-tags org-export-exclude-tags))
 	  (unless (or (string= src-tfile "no")
 		      (and tangle-file (not (equal tangle-file src-tfile)))
-		      (and language (not (string= language src-lang))))
+		      (and language (not (string= language src-lang)))
+		      (-intersection heading-tags excluded-tags))
 	    ;; Add the spec for this block to blocks under its
 	    ;; language.
 	    (let ((by-lang (assoc src-lang blocks))
