@@ -1,6 +1,6 @@
 ################################################################
 # Org-lectures Options
-LATEXMK ?= latexmk -pdf -lualatex
+LATEXMK ?= latexmk -pdf -lualatex -recorder 
 OL_DIR  ?= org-lecture
 export OL_DIR
 VIEW    ?= xdg-open
@@ -31,9 +31,13 @@ ARTIFACTS += build
 # Emacs Server
 EMACS_SESSION ?= org-lecture
 EC=make -s emacs/ensure; emacsclient -s ${EMACS_SESSION}
+EMACS_STAMP=build/.emacs.stamp
 
-emacs/start:
+emacs/start: ${EMACS_STAMP}
+
+${EMACS_STAMP}: 
 	emacs -q -l ${OL_DIR}/site-lisp/init.el --daemon=${EMACS_SESSION}
+	@touch build/.emacs.stamp
 
 emacs/debug:
 	@emacs --debug-init -q -l ${OL_DIR}/site-lisp/init.el
@@ -42,6 +46,7 @@ emacs/stop:
 	@emacsclient -s ${EMACS_SESSION}  -e '(kill-emacs 0)' >/dev/null 2>&1 || true
 	@pgrep -l -f "^emacs.*--daemon=${EMACS_SESSION}" || true
 	@pkill -f "^emacs.*--daemon=${EMACS_SESSION}" || true
+	@rm -f ${EMACS_STAMP}
 
 emacs/restart: emacs/stop emacs/start
 
@@ -66,7 +71,7 @@ help:
 # Slide Processing (org -> tex -> pdf)
 define PROCESS_SLIDE # $(1) = 01, $(2) = 01-einleitung
 
-build/tangle/$(2).tex: $(2).org
+build/tangle/$(2).tex: $(2).org ${EMACS_STAMP}
 	@mkdir -p build/tangle
 	${EC} -e '(org-babel-tangle-file "${PWD}/$(2).org" nil "latex")'
 	@mv $(2).tex $$@
@@ -77,8 +82,10 @@ build/$(2).slides.tex: build/tangle/$(2).tex
 	$${OL_TOOLS}/gen-latex-root beamer $$< > $$@
 
 build/$(2).slides.pdf: build/$(2).slides.tex ${SLIDE_TEX_DEPENDS}
-	${LATEXMK} $$< -outdir=build
+	${LATEXMK} $$< -outdir=build -deps-out=build/$(2).slides.deps
 	@mkdir -p build/html; cp $$@ build/html
+
+-include build/$(2).slides.deps
 
 slides: build/$(2).slides.pdf
 
@@ -95,8 +102,10 @@ build/$(2).handout.tex: build/tangle/$(2).tex
 	@$${OL_TOOLS}/gen-latex-root handout $$< > $$@
 
 build/$(2).handout.pdf: build/$(2).handout.tex ${SLIDE_TEX_DEPENDS}
-	${LATEXMK} $$< -outdir=build
+	${LATEXMK} $$< -outdir=build -deps-out=build/$(2).handout.deps
 	@mkdir -p build/html; cp $$@ build/html
+
+-include build/$(2).handout.deps
 
 HELP+="$(1).handout:       Build handout from $(2).org\n"
 $(1).handout: build/$(2).handout.pdf
@@ -135,7 +144,7 @@ $(1).split: build/html/$(2).handout/.split-stamp
 build/$(2).org: $(2).org build/html/$(2).handout/.split-stamp ${OL_TOOLS}/insert-carousels
 	${OL_TOOLS}/insert-carousels $(2).org build/$(2).handout.topics > $$@
 
-build/html/$(2).html: build/$(2).org ${OL_TOOLS}/html-postprocess
+build/html/$(2).html: build/$(2).org ${OL_TOOLS}/html-postprocess ${EMACS_STAMP}
 	@mkdir -p build/html
 	${EC} -e '(org-export-to-html-file "${PWD}/build/$(2).org" "${PWD}/build/html/$(2).html")'
 	${OL_TOOLS}/html-postprocess build/html/$(2).html

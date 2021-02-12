@@ -119,6 +119,7 @@ if __name__ == "__main__":
         topics = OrderedDict()
         for line in fd.readlines():
             (pages, block, topic) = parse_topic_line(line)
+#            sys.stderr.write(repr((pages, block, topic)))
             topics[(topic, block)] = []
             for page in range(pages[0], pages[1] + 1):
                 fn = f"{output_dir}/{base}/slide-{page:04d}.svg"
@@ -134,9 +135,16 @@ if __name__ == "__main__":
 
     with open(org) as fd:
         lines = list(fd.readlines())
-        blocks = list(find_blocks(lines))
-        for (topic,block_number), svgs in reversed(topics.items()):
-            start, end, title = blocks[int(block_number)-1]
-            lines[start:end+1] = make_carousel(block_number, title, svgs)
+        blocks = {}
+        for start, end, title in find_blocks(lines):
+            blocks[start + 1] = (start, end, title)
+
+        block_number = 0
+        for (topic,line_range), svgs in reversed(topics.items()):
+            topic_start, topic_end = map(int, line_range.split("-"))
+            #print(line_range, blocks.keys(),file=sys.stderr)
+            start, end, title = blocks[topic_start]
+            lines[start:end+1] = make_carousel(str(block_number), title, svgs)
+            block_number += 1
 
         print("".join(lines))

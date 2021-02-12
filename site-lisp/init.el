@@ -39,8 +39,8 @@
 (require 'ox-html)
 (require 'htmlize)
 
-(setq org-tangle-prologue "\\OrgLectureSectionStart{{{{property(ITEM)}}}}{{{{n(block)}}}}")
-(setq org-tangle-epilogue "\\OrgLectureSectionStop{{{{property(ITEM)}}}}{{{{n(block,-)}}}}")
+(setq org-tangle-prologue "\\OrgLectureSectionStart{{{{property(ITEM)}}}}{{{{range()}}}}")
+(setq org-tangle-epilogue "\\OrgLectureSectionStop{{{{property(ITEM)}}}}{{{{range()}}}}")
 
 ;; Configure org-mode
 (setq org-html-klipsify-src nil)

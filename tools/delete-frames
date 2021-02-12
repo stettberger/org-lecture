@@ -19,14 +19,14 @@ if __name__ == '__main__':
         section = None
         fd = open(tex, "w+")
         for line in lines:
-            if 'psuSectionStart' in line:
+            if 'OrgLectureSectionStart' in line:
                 section = []
                 print_section = False
             if section is not None:
                 if '%%ONLY%%' in line:
                     print_section = True
                 section.append(line)
-                if 'psuSectionStop' in line:
+                if 'OrgLectureSectionStop' in line:
                     if print_section:
                         fd.write("".join(section))
                     section = None
