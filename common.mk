@@ -35,9 +35,10 @@ EMACS_STAMP=build/.emacs.stamp
 
 emacs/start: ${EMACS_STAMP}
 
-${EMACS_STAMP}: 
+${EMACS_STAMP}:
 	emacs -q -l ${OL_DIR}/site-lisp/init.el --daemon=${EMACS_SESSION}
-	@touch build/.emacs.stamp
+	@mkdir -p build
+	@touch ${EMACS_STAMP}
 
 emacs/debug:
 	@emacs --debug-init -q -l ${OL_DIR}/site-lisp/init.el
