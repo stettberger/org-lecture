@@ -13,3 +13,8 @@ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deseru
 #+begin_center
 **EOF**
 #+end_center
+
+We can also insert Carousels from external slides
+
+
+CAROUSEL:pointer-none

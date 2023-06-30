@@ -1,0 +1,57 @@
+#!/usr/bin/python3
+from subprocess import check_output, check_call
+import re
+import sys
+
+def get_chapters(pdf):
+    output = check_output(['pdftk', pdf, 'dump_data_utf8'])
+    chapter = dict(BookmarkPageNumber='1', BookmarkLevel='1', end_page=None, BookmarkTitle="None")
+    chapters = []
+    end_pages = None
+    for line in output.decode().split("\n"):
+        if line.startswith("NumberOfPages"):
+            end_pages = line.split(":",1)[1].strip()
+        if not line.startswith("Bookmark"): continue
+        if line.startswith("BookmarkBegin"):
+            if len(chapters):
+                chapters[-1]['end_page'] = int(chapter['BookmarkPageNumber'])-1
+            chapters.append(chapter)
+            chapter = dict()
+        else:
+            assert ':' in line, "Invalid Line " + line
+            k,v = line.split(":",1)
+            chapter[k.strip()] = v.strip()
+
+    if len(chapters) > 0:
+        chapters[-1]['end_page'] = int(chapter['BookmarkPageNumber'])-1
+    chapters.append(chapter)
+    chapters[-1]['end_page'] = end_pages
+    if int(chapters[0]['end_page']) < int(chapters[0]['BookmarkPageNumber']):
+        del chapters[0]
+    return chapters
+
+
+def normalize_topic(topic):
+    topic = topic.strip()
+    topic = topic.replace(" ", "_").replace('"', "_").lower()
+    topic = re.sub("[^a-zA-Z_]", "_", topic)
+    topic = topic.strip("_")
+    return topic
+
+if __name__ == "__main__":
+    import sys
+    import html
+    import os
+    from multiprocessing import Pool
+    fn = sys.argv[1]
+    if len(sys.argv) > 2:
+        prefix = sys.argv[2] + "-"
+    else:
+        prefix = ""
+
+    chapters = get_chapters(fn)
+    print(f"pdfRange|orgBlockStart|heading|label")
+    for ch in chapters:
+        title = ch['BookmarkTitle']
+        label = normalize_topic(title)
+        print(f"{ch['BookmarkPageNumber']}-{ch['end_page']}||{title}|{prefix}{label}")

@@ -10,7 +10,9 @@ OL_TOOLS := ${OL_DIR}/tools
 
 SLIDE_TEX_DEPENDS += preamble.tex ${OL_DIR}/preamble.tex
 
-all:
+all: build
+htm: build
+
 
 ################################################################
 # Build Directory Setup
@@ -136,14 +138,15 @@ define PROCESS_SLIDE_HTML
 build/html/$(2).handout/.split-stamp: build/$(2).handout.pdf $(OL_TOOLS)/split-pdf
 	@mkdir -p build/html/$(2).handout/
 	@rm -f build/html/$(2)/*.pdf build/html/$(2)/*.svg
-	${OL_TOOLS}/split-pdf $$< $$(patsubst %.pdf,%.topics,$$<)
+	@${OL_TOOLS}/split-pdf $$< 
 	@touch $$@
 
 HELP+="$(1).handout:       Split handout into svg pieces\n"
 $(1).split: build/html/$(2).handout/.split-stamp
 
-build/$(2).org: $(2).org build/html/$(2).handout/.split-stamp ${OL_TOOLS}/insert-carousels
-	${OL_TOOLS}/insert-carousels $(2).org build/$(2).handout.topics > $$@
+build/$(2).org: $(2).org build/html/$(2).handout/.split-stamp $${TOPIC_FILES_$(2)} ${OL_TOOLS}/insert-carousels
+	@mkdir -p build
+	${OL_TOOLS}/insert-carousels $(2).org build/$(2).handout.topics $${TOPIC_FILES_$(2)} > $$@
 
 build/html/$(2).html: build/$(2).org ${OL_TOOLS}/html-postprocess ${EMACS_STAMP}
 	@mkdir -p build/html
@@ -167,11 +170,16 @@ $(eval $(call invoke,PROCESS_SLIDE_HTML,$(ORG_SLIDES)))
 define PROCESS_HTML
 # $(1): basename
 # $(2): basename
-build/html/$(2).html: $(2).org
+
+build/html/$(2).html: build/$(2).org
 	@mkdir -p build/html
-	${EC} -e '(org-export-to-html-file "${PWD}/$(2).org" "${PWD}/build/html/$(2).html")'
+	${EC} -e '(org-export-to-html-file "${PWD}/build/$(2).org" "${PWD}/build/html/$(2).html")'
 	${OL_TOOLS}/html-postprocess build/html/$(2).html
 
+build/$(2).org: $(2).org ${OL_TOOLS}/insert-carousels $${TOPIC_FILES_$(2)}
+	@mkdir -p build
+	@echo TOPIC_FILES_$(2): $${TOPIC_FILES_$(2)}
+	${OL_TOOLS}/insert-carousels $(2).org $${TOPIC_FILES_$(2)} > $$@
 
 html: build/html/$(1).html
 $(1).html: build/html/$(1).html
@@ -184,6 +192,21 @@ endef
 
 $(eval $(call invoke,PROCESS_HTML,$(ORG_HTML)))
 
+################################################################
+# Add an external PDF as to an HTML target
+define EXTERNAL_PDF
+# $(1): topic-prefix
+# $(2): PDF
+# $$(info EXTERNAL_PDF: $(1), $(2))
+
+build/$(1).topics: $(2) build/html/$(1)/slide-0001.svg ${OL_TOOLS}/bookmark-topics
+	${OL_TOOLS}/bookmark-topics $(2) $(1) > $$@
+
+build/html/$(1)/slide-0001.svg: $(2) ${OL_TOOLS}/split-pdf
+	${OL_TOOLS}/split-pdf $(2) $(1)
+	@cp $(2) build/html/
+
+endef
 
 ################################################################
 # Stamp file support for index Page
@@ -262,8 +285,10 @@ fig/%.pdf: fig/%.svg ${OL_TOOLS}/svgfig
 	${OL_TOOLS}/svgfig $<
 
 
-clean: emacs/stop
+clean_common: emacs/stop
 	rm -rf ${ARTIFACTS}
+
+clean: clean_common
 
 .PRECIOUS: build/%.pdf build/tangle/%.tex build/%.pdf.split build/%.tex
 .PHONY:  build

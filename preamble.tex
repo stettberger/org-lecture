@@ -3,6 +3,7 @@
 
 \AtBeginDocument{
   \pagenumbering{arabic} % for pageslts
+    \immediate\write\cutfile{pdfRange|orgBlockStart|heading|label}%
 }
 
 % Section Title and Block Number
@@ -18,10 +19,11 @@
 \newcounter{FirstPage} % counter, for first page number
 \newcounter{EndPage} % counter, for first page number
 \setcounter{FirstPage}{1} % Set FirstPage to page 1
+\newcounter{OrgLectureBlocks} % counter, for first page number
 \newcommand{\OrgLectureSectionStop}[2]{% {topic}{lines}
-  \setcounter{EndPage}{\theCurrentPage-1}
-  \immediate\write\cutfile{\theFirstPage -\theEndPage:#2:#1}%
-  \typeout{Topic: \theFirstPage -\theEndPage:#2:#1}
+  \setcounter{EndPage}{\theCurrentPage-1}%
+  \stepcounter{OrgLectureBlocks}%
+  \immediate\write\cutfile{\theFirstPage -\theEndPage|#2|#1|block-\theOrgLectureBlocks}%
   \setcounter{FirstPage}{\theCurrentPage}% set FirstPage to new first page
 }
 

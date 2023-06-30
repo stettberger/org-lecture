@@ -215,7 +215,6 @@ non-nil, return the full association list to be used by
                  (beg (org-element-property :begin datum))
                  (end (org-element-property :end datum))
                  (beg-line (1+ (count-lines 1 beg)))
-                 (end-line (1+ (count-lines 1 end)))
                  (body (if (org-babel-noweb-p params :tangle)
                            (progn
                              (setf (nth 1 info)
@@ -224,7 +223,7 @@ non-nil, return the full association list to be used by
                                            (nth 1 info)
                                            org-tangle-epilogue))
                              (setq macros
-                                   `(("range" . ,(format "%s-%s" beg-line end-line))
+                                   `(("blockStart" . ,(format "%s" beg-line))
                                      ("subtitle" . ,(org-macro--find-keyword-value "SUBTITLE" t))
                                      ,@macros))
                              (org-babel-expand-noweb-references info))

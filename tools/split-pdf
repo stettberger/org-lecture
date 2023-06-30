@@ -3,25 +3,24 @@
 import sys
 import subprocess
 import os.path
-from common import parse_topic_line
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print(f"usage: {sys.argv[0]} [PDF] [TOPIC-FILE]")
+    if len(sys.argv) not in (2,3):
+        print(f"usage: {sys.argv[0]} [PDF] <TOPIC-PREFIX>")
+        sys.exit(-1)
 
     pdf = sys.argv[1]
     pdf_base, _ = os.path.splitext(pdf)
     lecture = os.path.basename(pdf_base)
+    if len(sys.argv) > 2:
+        lecture = sys.argv[2]
     output_dir = f"build/html/{lecture}"
+
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
 
     # Use SVG
     convert = ["pdf2svg", pdf, f"{output_dir}/slide-%04d.svg", "all"]
     print("[split-pdf]", " ".join(convert))
     subprocess.check_call(convert)
 
-    with open(sys.argv[2], "rb") as fd:
-        for line in fd.readlines():
-            (pages, block, topic) = parse_topic_line(line)
-            for page in range(pages[0], pages[1] + 1):
-                fn = f"{output_dir}/slide-{page:04d}.svg"
-                assert os.path.exists(fn), "PDF split failed"

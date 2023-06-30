@@ -8,10 +8,16 @@ ORG_SLIDES=01-einleitung.org
 # into html files.
 ORG_HTML=index.org
 
+TOPIC_FILES_index         += build/pointer.topics
+TOPIC_FILES_01-einleitung += build/pointer.topics
+
 REMOTE=/tmp/remote
 
 OL_DIR=..
 include ../common.mk
+
+# Convert some PDFs to SVGs and make them accessible as CAROUSEL:
+$(eval $(call EXTERNAL_PDF,pointer,pdf/dietrich-pointer.pdf))
 
 $(eval $(call PROCESS_STAMP,01,fig/01-picture.pdf,0))
 

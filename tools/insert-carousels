@@ -1,16 +1,20 @@
-#!/usr/bin/python3.8
+#!/usr/bin/python3
 
 import sys
 import os
+os.environ['NUMEXPR_MAX_THREADS'] = '1'
+
 import glob
 import logging
 import re
 import shlex
 logging.basicConfig(level=logging.INFO)
 from collections import OrderedDict
-from common import parse_topic_line, parse_block_src
+import pandas as pd
 
-def make_carousel(label, title, files):
+
+
+def make_carousel(label, files):
     ret = []
     if len(files) == 1:
         ret += '#+BEGIN_EXPORT html\n'
@@ -21,8 +25,8 @@ def make_carousel(label, title, files):
     ret += '#+BEGIN_EXPORT html\n'
     ret += '<div class="content">'
     ret += '<p class="marginnote"><a class="graphic-button" href="'+base+'.sources.html#block-'+label+'">Graphiken und Animationen</a></p>'
-    if title:
-        ret += f'<span class="marginnote">Folien: {title}</span>\n'
+    #if title:
+    #    ret += f'<span class="marginnote">Folien: {title}</span>\n'
     ret += '<div class="container">'
     ret += '<div id="slides-' + label +'" class="carousel" data-wrap="false" data-interval="0" data-ride="carousel">'
     ret += '<ol class="carousel-indicators">'
@@ -95,6 +99,8 @@ def make_sources_html(tex_log_fd, html_fd):
 
 def find_blocks(lines):
     start_line = None
+    block_id = 1
+    data = []
     for idx, line in enumerate(lines):
         line = parse_block_src(line)
         if not line: continue
@@ -103,48 +109,108 @@ def find_blocks(lines):
             start_line['idx'] = idx
 
         if line['type'] == 'end_src' and start_line and start_line['tangle']:
-            yield(start_line['idx'], idx, start_line['title'])
+            data.append(
+                (f'block-{block_id}', start_line['idx'], idx)
+            )
             start_line = None
+            block_id += 1
+    return pd.DataFrame(data=data, columns=['label', 'orgRangeStart', 'orgRangeEnd'])
+
+def parse_block_src(line):
+    if "#+begin_src" in line.lower():
+        tokens = shlex.split(line)
+        def with_attr(key):
+            if key in tokens:
+                return tokens[tokens.index(key)+1]
+        ret = {'type': 'begin_src',
+               'line': line,
+               'language': tokens[1],
+               'tangle': with_attr(':tangle') != "no"}
+        return ret
+
+    if "#+end_src" in line.lower():
+        return {'type': 'end_src', 'line': line}
+
+def read_topics(topics_fn):
+    df =  pd.read_csv(topics_fn, delimiter="|")
+    logging.info("Topics:\n" + df.to_string())
+
+    df['pdfRangeStart'] = df.pdfRange.str.split('-').transform(lambda x: int(x[0]))
+    df['pdfRangeEnd'] = df.pdfRange.str.split('-').transform(lambda x: int(x[1]))
+    return df
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print(f"usage: {sys.argv[0]} [ORG-FILE] [TOPIC-FILE]")
+    if len(sys.argv) == 1:
+        print(f"usage: {sys.argv[0]} [ORG-FILE] <TOPIC-FILE...>")
 
-    org, topics_fn = sys.argv[1:]
-    basename = os.path.basename(topics_fn)
-    global base
-    base,_ = os.path.splitext(basename)
-    output_dir = f"build/html"
-    with open(topics_fn, "rb") as fd:
-        topics = OrderedDict()
-        for line in fd.readlines():
-            (pages, block, topic) = parse_topic_line(line)
-#            sys.stderr.write(repr((pages, block, topic)))
-            topics[(topic, block)] = []
-            for page in range(pages[0], pages[1] + 1):
-                fn = f"{output_dir}/{base}/slide-{page:04d}.svg"
-                assert os.path.exists(fn)
-                fn = os.path.relpath(fn, output_dir)
-                topics[(topic, block)].append(fn)
-            logging.info("Block %s slides: %s", block, len(topics[(topic, block)]))
-            logging.debug(topic)
+    org = sys.argv[1]
+    dfs = []
+    for topics_fn in sys.argv[2:]:
+        logging.info("Reading Topic File: %s", topics_fn)
+        assert os.path.exists(topics_fn), topics_fn
 
-    with open(topics_fn.replace(".topics", ".log")) as tex_log_fd:
-        with open(f"{output_dir}/{base}.sources.html", "w+") as html_fd:
-            make_sources_html(tex_log_fd, html_fd)
+        basename = os.path.basename(topics_fn)
+        global base
+        base,_ = os.path.splitext(basename)
+        output_dir = f"build/html"
 
+        topics = read_topics(topics_fn)
+        topics['pdfBase'] = base
+        dfs.append(topics)
+
+        log = topics_fn.replace(".topics", ".log")
+        if os.path.exists(log):
+            with open(log) as tex_log_fd:
+                with open(f"{output_dir}/{base}.sources.html", "w+") as html_fd:
+                    make_sources_html(tex_log_fd, html_fd)
+
+    if len(dfs) == 0:
+        logging.warning("Called insert-carousel without topics file")
+        with open(org) as fd:
+            print(fd.read())
+        sys.exit(0)
+    else:
+        topics = pd.concat(dfs)
+
+
+    # 2. Step: Open the ORG file and replace all source blocks with "CAROUSEL:" lines
     with open(org) as fd:
         lines = list(fd.readlines())
-        blocks = {}
-        for start, end, title in find_blocks(lines):
-            blocks[start + 1] = (start, end, title)
+        blocks = find_blocks(lines)
+        if len(blocks) > 0:
+            logging.info("Blocks:\n %s", blocks.to_string())
 
-        block_number = 0
-        for (topic,line_range), svgs in reversed(topics.items()):
-            topic_start, topic_end = map(int, line_range.split("-"))
-            #print(line_range, blocks.keys(),file=sys.stderr)
-            start, end, title = blocks[topic_start]
-            lines[start:end+1] = make_carousel(str(block_number), title, svgs)
-            block_number += 1
+            # Sanity check that our parsed information and the topic file match
+            df = topics.merge(blocks, on='label', how='outer')
+            mismatch = (df.orgBlockStart != (df.orgRangeStart+1)) & ~df.orgBlockStart.isna()
+            if mismatch.any():
+                logging.error("Mismatch in Information from topic file and find_blocks():\n", df[mismatch])
+                sys.exit(-1)
 
-        print("".join(lines))
+    # Replace org source blocks with CAROUSEL statements
+    for (_, row) in reversed(list(blocks[~blocks.orgRangeStart.isna()].iterrows())):
+        lines[row.orgRangeStart:row.orgRangeEnd+1] = ['CAROUSEL:' + row.label]
+
+    for lineno, line in reversed(list(enumerate(lines))):
+        line = line.strip()
+        if line.startswith("CAROUSEL:"):
+            label = line.split(":",1)[1].strip()
+            df = topics[topics.label == label]
+            if len(df) != 1:
+                logging.error(f'CAROUSEL `{label}`: not found or unambigious.')
+                sys.exit(-1)
+
+            carousel = df.iloc[0]
+            svgs = []
+            for page in range(carousel.pdfRangeStart, carousel.pdfRangeEnd+1):
+                fn = f"{output_dir}/{carousel.pdfBase}/slide-{page:04d}.svg"
+                if not os.path.exists(fn):
+                    logging.error(f"CAROUSEL {label}: slide {fn} not found")
+                    sys.exit(-1)
+
+                fn = os.path.relpath(fn, output_dir)
+                svgs.append(fn)
+
+            lines[lineno:lineno+1] = make_carousel(label, svgs)
+
+    print("".join(lines))
