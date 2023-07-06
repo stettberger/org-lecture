@@ -261,7 +261,7 @@ define PROCESS_PUBLISH
 # $(1) = 01
 # $(2) = 01-einleitung
 $(1).publish: build build/html/index.html $(1).all
-	cd build/html; rsync -aLv  ./img ./css ./js ./lst ./fig ./$(2)* ${REMOTE}
+	cd build/html; rsync -aLv  ./img ./css ./js ./lst ./fig ./$(2)* $${REMOTE}
 
 publish: $(1).publish
 endef
