@@ -1,6 +1,7 @@
 (require 'org-element)
 (require 'org-macro)
 (require 's)
+(require 'f)
 
 (defun org-macro--counter-initialize (&optional new-file)
   "Initialize `org-macro--counter-table'."
@@ -17,7 +18,7 @@
   "Get global org property KEY of current buffer."
   (org-element-property :value (car (org-global-props key))))
 
-(defun org-macro-headlines (file)
+(defun org-macro-headlines (url)
     (let ((parsetree  (org-element-parse-buffer 'headline))
 	  (res "") (sep ""))
       (org-element-map parsetree 'headline
@@ -27,41 +28,43 @@
 		(title (org-element-property :title headline)))
             (unless (or (not id) (member 'noexport tags))
               (setq res (format "%s%s<a href=\"%s#%s\">%s</a>"
-				res sep (s-replace ".org" ".html" file)
-				id title))
+				res sep url id title))
               (setq sep " - ")))))
       res))
 
 (defun org-macro-topic (file img)
- (with-file-from-disk file
-  (let* ((url (s-replace ".org" ".html" file))
-         (number (s-replace-regexp "-.*" "" file))
-         (date (org-global-prop-value "date"))
-         (words (string-to-number
-                 (s-trim
-                  (shell-command-to-string
-                   (format "make -s %s.wc" number)))))
-         (minutes (/ words 100))
-         (video-url (org-global-prop-value "video_url"))
-         (date-html (if date (format "<span class=\"structure\">%s</span> " date) ""))
-         )
-    (concat
-     "#+begin_export html\n"
-     (format "<h2>%s<a href=\"%s\">%s</a> <span class=\"float-right\">(%s minutes)</span></h2>"
-             date-html
-             url (org-global-prop-value "subtitle")
-             minutes
+  (let ((full-path (format "%s%s" org-lecture-src-dir file)))
+    (with-file-from-disk full-path
+      (let* ((basename (f-filename file))
+             (url (s-replace ".org" ".html" basename))
+             (date (org-global-prop-value "date"))
+             (words (string-to-number
+                     (s-trim
+                      (shell-command-to-string
+                       (format "make -C %s -s %s.wc"
+                               (f-dirname full-path)
+                               (f-base file))))))
+             (minutes (/ words 100))
+             (video-url (org-global-prop-value "video_url"))
+             (date-html (if date (format "<span class=\"structure\">%s</span> " date) ""))
              )
-     (format "<div class=\"row\"><div class=\"col-md-4\"><img class=\"img-index\" src=\"%s\"></div>" img)
-     "<div class=\"col-md-8\">\n"
-     "<p>"
-     (if video-url
-         (format "<strong><a href=\"%s\">Videoaufzeichnung</a></strong>  - " video-url)
-       "") 
-     "<strong>Abschnitte:</strong> " (org-macro-headlines file)
-     "</p></div></div>\n"
-     "#+end_export\n"
-     ))))
+        (concat
+         "#+begin_export html\n"
+         (format "<h2>%s<a href=\"%s\">%s</a> <span class=\"float-right\">(%s minutes)</span></h2>"
+                 date-html
+                 url (org-global-prop-value "title")
+                 minutes
+                 )
+         (format "<div class=\"row\"><div class=\"col-md-4\"><img class=\"img-index\" src=\"%s\"></div>" img)
+         "<div class=\"col-md-8\">\n"
+         "<p>"
+         (if video-url
+             (format "<strong><a href=\"%s\">Videoaufzeichnung</a></strong>  - " video-url)
+           "") 
+         "<strong>Abschnitte:</strong> " (org-macro-headlines url)
+         "</p></div></div>\n"
+         "#+end_export\n"
+         )))))
 
 ;;; SRA-ADDON: Add INCLUDE to the search regexp
 (defun org-macro--collect-macros (&optional files templates)

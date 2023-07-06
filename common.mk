@@ -1,6 +1,6 @@
 ################################################################
 # Org-lectures Options
-LATEXMK ?= latexmk -pdf -lualatex -recorder 
+LATEXMK ?= latexmk -pdf -lualatex -recorder -outdir=build 
 OL_DIR  ?= org-lecture
 export OL_DIR
 VIEW    ?= xdg-open
@@ -9,6 +9,8 @@ VIEW    ?= xdg-open
 OL_TOOLS := ${OL_DIR}/tools
 
 SLIDE_TEX_DEPENDS += preamble.tex ${OL_DIR}/preamble.tex
+
+MAKEFLAGS += --no-builtin-rules
 
 all: build
 htm: build
@@ -85,7 +87,7 @@ build/$(2).slides.tex: build/tangle/$(2).tex
 	$${OL_TOOLS}/gen-latex-root beamer $$< > $$@
 
 build/$(2).slides.pdf: build/$(2).slides.tex ${SLIDE_TEX_DEPENDS}
-	${LATEXMK} $$< -outdir=build -deps-out=build/$(2).slides.deps
+	${LATEXMK} $$< -deps-out=build/$(2).slides.deps
 	@mkdir -p build/html; cp $$@ build/html
 
 -include build/$(2).slides.deps
@@ -105,7 +107,7 @@ build/$(2).handout.tex: build/tangle/$(2).tex
 	@$${OL_TOOLS}/gen-latex-root handout $$< > $$@
 
 build/$(2).handout.pdf: build/$(2).handout.tex ${SLIDE_TEX_DEPENDS}
-	${LATEXMK} $$< -outdir=build -deps-out=build/$(2).handout.deps
+	${LATEXMK} $$< -deps-out=build/$(2).handout.deps
 	@mkdir -p build/html; cp $$@ build/html
 
 -include build/$(2).handout.deps
@@ -144,9 +146,9 @@ build/html/$(2).handout/.split-stamp: build/$(2).handout.pdf $(OL_TOOLS)/split-p
 HELP+="$(1).handout:       Split handout into svg pieces\n"
 $(1).split: build/html/$(2).handout/.split-stamp
 
-build/$(2).org: $(2).org build/html/$(2).handout/.split-stamp $${TOPIC_FILES_$(2)} ${OL_TOOLS}/insert-carousels
+build/$(2).org: $(2).org build/html/$(2).handout/.split-stamp $${TOPIC_FILES_$(1)} $${TOPIC_FILES_$(2)} ${OL_TOOLS}/insert-carousels
 	@mkdir -p build
-	${OL_TOOLS}/insert-carousels $(2).org build/$(2).handout.topics $${TOPIC_FILES_$(2)} > $$@
+	${OL_TOOLS}/insert-carousels $(2).org build/$(2).handout.topics $${TOPIC_FILES_$(1)} $${TOPIC_FILES_$(2)} > $$@
 
 build/html/$(2).html: build/$(2).org ${OL_TOOLS}/html-postprocess ${EMACS_STAMP}
 	@mkdir -p build/html
@@ -176,18 +178,21 @@ build/html/$(2).html: build/$(2).org
 	${EC} -e '(org-export-to-html-file "${PWD}/build/$(2).org" "${PWD}/build/html/$(2).html")'
 	${OL_TOOLS}/html-postprocess build/html/$(2).html
 
-build/$(2).org: $(2).org ${OL_TOOLS}/insert-carousels $${TOPIC_FILES_$(2)}
+build/$(2).org: $(2).org ${OL_TOOLS}/insert-carousels $${TOPIC_FILES_$(1)} $${TOPIC_FILES_$(2)}
 	@mkdir -p build
-	@echo TOPIC_FILES_$(2): $${TOPIC_FILES_$(2)}
-	${OL_TOOLS}/insert-carousels $(2).org $${TOPIC_FILES_$(2)} > $$@
+	${OL_TOOLS}/insert-carousels $(2).org $${TOPIC_FILES_$(1)} $${TOPIC_FILES_$(2)} > $$@
 
-html: build/html/$(1).html
-$(1).html: build/html/$(1).html
-$(1).html.view: build/html/$(1).html
-$(1).view: build/html/$(1).html
-$(1): build/html/$(1).html
-$(1).all: build/html/$(1).html
+html: build/html/$(2).html
+$(1).html: build/html/$(2).html
+$(1).html.view: build/html/$(2).html
+$(1).view: build/html/$(2).html
+$(1): build/html/$(2).html
+$(1).all: build/html/$(2).html
 all: $(1).all
+
+HELP+="$(1).html:       Build HTML file\n"
+HELP+="$(1).html.view:  View HTML file\n"
+
 endef
 
 $(eval $(call invoke,PROCESS_HTML,$(ORG_HTML)))
@@ -235,9 +240,12 @@ endef
 define PROCESS_WORDCOUNT
 # $(1) = 01
 # $(2) = 01-einleitung
-$(1).wc:
+ifneq "$(1)" "$(2)"
+$(1).wc: $(2).wc
+endif
+$(2).wc:
 	@awk 'BEGIN {IGNORECASE=1; p=1}; /#\+begin_(example|src)/ {p=0}; {if(p) print};  /#\+end_(example|src)/ {p=1}' < $(2).org | wc -w
-WC+=$(1).wc
+WC+=$(2).wc
 
 endef
 
@@ -283,6 +291,17 @@ fig/%.pdf: fig/%.dot
 
 fig/%.pdf: fig/%.svg ${OL_TOOLS}/svgfig
 	${OL_TOOLS}/svgfig $<
+
+ifdef TEXMF
+build: ${TEXMF}/ls-R
+
+${TEXMF}/ls-R:
+	mktexlsr ${TEXMF}
+
+ARTIFACTS += ../texmf/ls-R
+
+export TEXINPUTS := ${TEXMF}//:${TEXINPUTS}
+endif
 
 
 clean_common: emacs/stop
