@@ -1,6 +1,6 @@
 ################################################################
 # Org-lectures Options
-LATEXMK ?= latexmk -pdf -lualatex -recorder -outdir=build 
+LATEXMK ?= latexmk -pdf -lualatex -bibtex -recorder -outdir=build 
 OL_DIR  ?= org-lecture
 export OL_DIR
 VIEW    ?= xdg-open
@@ -210,7 +210,6 @@ build/$(1).topics: $(2) build/html/$(1)/slide-0001.svg ${OL_TOOLS}/bookmark-topi
 build/html/$(1)/slide-0001.svg: $(2) ${OL_TOOLS}/split-pdf
 	${OL_TOOLS}/split-pdf $(2) $(1)
 	@cp $(2) build/html/
-
 endef
 
 ################################################################
@@ -261,7 +260,9 @@ define PROCESS_PUBLISH
 # $(1) = 01
 # $(2) = 01-einleitung
 $(1).publish: build build/html/index.html $(1).all
-	cd build/html; rsync -aLv  ./img ./css ./js ./lst ./fig ./$(2)* $${REMOTE}
+	cd build/html; rsync -aLv  ./img ./css ./js ./lst ./fig ./$(2)* 	\
+	$(foreach TF,$${TOPIC_FILES_$(1)},$$(patsubst build/%.topics,%,${TF}))  \
+	$${REMOTE}
 
 publish: $(1).publish
 endef
