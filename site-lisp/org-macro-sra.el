@@ -46,16 +46,19 @@
                                (f-base file))))))
              (minutes (/ words 100))
              (video-url (org-global-prop-value "video_url"))
+             (date-date (substring date 1 (- (length date) 1)))
              (date-html (if date (format "<span class=\"structure\">%s</span> " date) ""))
              )
         (concat
          "#+begin_export html\n"
-         (format "<h2>%s<a href=\"%s\">%s</a> <span class=\"float-right\">(%s minutes)</span></h2>"
+         (format "<h2 start='%sT00:00:00'>%s<a href=\"%s\">%s</a> <span class=\"float-right\">(%s minutes)</span></h2>"
+                 date-date
                  date-html
                  url (org-global-prop-value "title")
                  minutes
                  )
-         (format "<div class=\"row\"><div class=\"col-md-4\"><img class=\"img-index\" src=\"%s\"></div>" img)
+         (format "<div class=\"row\" start=\%sT00:00:00'><div class=\"col-md-4\"><img class=\"img-index\" src=\"%s\"></div>"
+                 date-date img)
          "<div class=\"col-md-8\">\n"
          "<p>"
          (if video-url
