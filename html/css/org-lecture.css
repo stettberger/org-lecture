@@ -321,7 +321,7 @@ a.carousel-control-prev, a.carousel-control-next {
     margin-bottom:35px;
 }
 
-.slide {
+.slide-beamer {
     border: 1px solid black;
     cursor: pointer;
 }
@@ -347,6 +347,7 @@ button.execute {
     display: inline;
     position: relative;
     background-color: white;
+    color: black;
     top: 10px;
     left: 10px;
     padding: 3px;

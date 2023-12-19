@@ -1,0 +1,18 @@
+<html xmlns="http://www.ibr.cs.tu-bs.de/xsd/xxhtml"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.ibr.cs.tu-bs.de/xsd/xxhtml http://www.ibr.cs.tu-bs.de/xsd/xxhtml.xsd">
+  <head>
+    <title></title>
+    <meta name="keywords" content="IBR, Betriebssysteme, Rechnerverbund"/>
+    <link href="/vss/static/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/org-mode.css" rel="stylesheet" />
+    <link href="css/org-lecture-ibr.css" rel="stylesheet" />
+    <script language="JavaScript" type="text/javascript" src="/vss/static/jquery.min.js"></script>
+    <script language="JavaScript" type="text/javascript" src="/vss/static/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/org-lecture.js"></script>
+  </head>
+  <body class="wide">
+    <div id="content"/>
+  </body>
+</html>
+

@@ -140,7 +140,7 @@ define PROCESS_SLIDE_HTML
 build/html/$(2).handout/.split-stamp: build/$(2).handout.pdf $(OL_TOOLS)/split-pdf
 	@mkdir -p build/html/$(2).handout/
 	@rm -f build/html/$(2)/*.pdf build/html/$(2)/*.svg
-	@${OL_TOOLS}/split-pdf $$< 
+	@${OL_TOOLS}/split-pdf $$<
 	@touch $$@
 
 HELP+="$(1).handout:       Split handout into svg pieces\n"
@@ -150,10 +150,12 @@ build/$(2).org: $(2).org build/html/$(2).handout/.split-stamp $${TOPIC_FILES_$(1
 	@mkdir -p build
 	${OL_TOOLS}/insert-carousels $(2).org build/$(2).handout.topics $${TOPIC_FILES_$(1)} $${TOPIC_FILES_$(2)} > $$@
 
-build/html/$(2).html: build/$(2).org ${OL_TOOLS}/html-postprocess ${EMACS_STAMP}
+build/html/$(2).html: build/$(2).org ${OL_TOOLS}/html-postprocess ${EMACS_STAMP} PHONY
 	@mkdir -p build/html
-	${EC} -e '(org-export-to-html-file "${PWD}/build/$(2).org" "${PWD}/build/html/$(2).html")'
-	${OL_TOOLS}/html-postprocess build/html/$(2).html
+	@echo "[org-export] build/$(2).org"
+	@${EC} -e '(org-export-to-html-file "${PWD}/build/$(2).org" "${PWD}/build/html/$(2).html")'
+	@echo "[html-postprocess] build/html/$(2).html"
+	@${OL_TOOLS}/html-postprocess build/html/$(2).html
 
 HELP+="$(1).html:       Build HTML file\n"
 $(1).html: build build/html/$(2).html
@@ -260,7 +262,7 @@ define PROCESS_PUBLISH
 # $(1) = 01
 # $(2) = 01-einleitung
 $(1).publish: build build/html/index.html $(1).all
-	cd build/html; rsync -aLv  ./img ./css ./js ./lst ./fig ./$(2)* 	\
+	cd build/html; rsync -aLv  ${RSYNC_OPTS} ./img ./css ./js ./lst ./fig ./$(2)* 	\
 	$(foreach TF,$${TOPIC_FILES_$(1)},$$(patsubst build/%.topics,%,${TF}))  \
 	$${REMOTE}
 
@@ -310,5 +312,7 @@ clean_common: emacs/stop
 
 clean: clean_common
 
+PHONY:
+
 .PRECIOUS: build/%.pdf build/tangle/%.tex build/%.pdf.split build/%.tex
-.PHONY:  build
+.PHONY:  build PHONY

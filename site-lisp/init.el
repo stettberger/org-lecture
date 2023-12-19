@@ -47,6 +47,7 @@
 (setq org-html-htmlize-font-prefix  "org-")
 (setq org-html-htmlize-output-type 'css)
 (setq org-html-head-include-scripts nil)
+(setq org-html-head-include-default-style nil)
 (setq org-html-postamble "")
 
 (let ((custom (format "%s/custom.el" org-lecture-src-dir)))

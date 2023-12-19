@@ -3,9 +3,7 @@
 import sys
 from lxml.html import parse
 from lxml import etree
-
-with open(sys.argv[1]) as fd:
-    doc = parse(fd)
+from pathlib import Path
 
 def wrap(element, type, unwrap=False,**kwargs):
     parent = element.getparent()
@@ -19,6 +17,10 @@ def wrap(element, type, unwrap=False,**kwargs):
     else:
         wrap.append(element)
     return wrap
+
+fn = Path(sys.argv[1])
+with open(fn, "rb") as fd:
+    doc = parse(fd)
 
 # Wrap Containers into Bootstrap
 postamble = doc.find("//div[@id='postamble']")
@@ -36,6 +38,26 @@ if toc is not None:
     toc.attrib['class'] = 'well'
     x = wrap(toc, 'div', **{'class': 'card bg-light mb-2 pb-1', 'id': 'toc-well'})
 
-with open(sys.argv[1], 'wb') as fd:
-    fd.write(etree.tostring(doc))
+# Write out HTML File
+fn.write_bytes(
+    etree.tostring(doc)
+)
+# Write out IBR XML File
+with open(Path(__file__).parent / 'html-postprocess.template.xml') as fd:
+    template = parse(fd)
 
+for dst, src in [('//title', '//title'),
+                 ('//div[@id = "content"]', '//body/*')]:
+    #now insert them
+    dst = template.xpath(dst)[0]
+    src = doc.xpath(src)
+    if len(src) == 1:
+        dst.getparent().replace(dst, src[0])
+    else:
+        for n in reversed(src):
+            dst.insert(0, n)
+
+fn.with_suffix(".xml").write_bytes(
+    b'<?xml version="1.0"?><?xml-stylesheet type="text/xsl" href="/xsl/show.xsl"?>'
+    + etree.tostring(template, doctype='')
+)

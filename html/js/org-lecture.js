@@ -14,7 +14,7 @@ $( document ).ready(function() {
         inner.unwrap().unwrap().unwrap();
         inner.removeClass('carousel-inner');
         inner.children().children().unwrap();
-        $(".slide").removeClass('d-block').removeClass('slide').addClass('slide-print');
+        $(".slide-beamer").removeClass('d-block').removeClass('slide-beamer').addClass('slide-print');
     } else {
         if (window.location.href.match(/.*handout.html/)) {
             $('<strong> - Druckversion</strong>').appendTo('.subtitle');
